@@ -37,13 +37,29 @@ export default function MatchDetailPage() {
     </div>
   );
 
-  const team1 = teams.find(t => t.id === match.team1Id);
-  const team2 = teams.find(t => t.id === match.team2Id);
+  const team1Raw = teams.find(t => t.id === match.team1Id);
+  const team2Raw = teams.find(t => t.id === match.team2Id);
+
+  // Apply playingXI filter if the match has started and playingXI is set
+  const team1 = team1Raw ? {
+    ...team1Raw,
+    players: match.playingXI?.[team1Raw.id]?.length > 0 
+      ? team1Raw.players.filter(p => match.playingXI[team1Raw.id].includes(p.id)) 
+      : team1Raw.players
+  } : null;
+  
+  const team2 = team2Raw ? {
+    ...team2Raw,
+    players: match.playingXI?.[team2Raw.id]?.length > 0 
+      ? team2Raw.players.filter(p => match.playingXI[team2Raw.id].includes(p.id)) 
+      : team2Raw.players
+  } : null;
+
   const inningsIdx = match.currentInnings;
   const innings = match.innings[inningsIdx];
-  const battingTeam = teams.find(t => t.id === innings?.teamId);
+  const battingTeam = team1?.id === innings?.teamId ? team1 : team2;
   const bowlingTeamId = innings?.teamId === match.team1Id ? match.team2Id : match.team1Id;
-  const bowlingTeam = teams.find(t => t.id === bowlingTeamId);
+  const bowlingTeam = team1?.id === bowlingTeamId ? team1 : team2;
 
   const striker = innings?.batting?.find(b => b.isStriker && !b.isOut);
   const nonStriker = innings?.batting?.find(b => b.isNonStriker && !b.isOut);
@@ -150,7 +166,7 @@ export default function MatchDetailPage() {
   };
 
   // Toss setup
-  const handleTossSetup = (tossWinner, tossChoice, lineup) => {
+  const handleTossSetup = (tossWinner, tossChoice, lineup, playingXI) => {
     const battingTeamId = tossChoice === 'bat' ? tossWinner : (tossWinner === match.team1Id ? match.team2Id : match.team1Id);
     const bowlingTeamId2 = battingTeamId === match.team1Id ? match.team2Id : match.team1Id;
     startMatch(id, {
@@ -160,6 +176,7 @@ export default function MatchDetailPage() {
       bowlingTeamId: bowlingTeamId2,
       battingLineup: lineup.batting,
       bowlingLineup: lineup.bowling,
+      playingXI,
     });
     setShowToss(false);
     show('Match started! 🏏', 'success');
@@ -798,7 +815,7 @@ export default function MatchDetailPage() {
                     );
                   }
                   const bowlTeamId = inn.teamId === match.team1Id ? match.team2Id : match.team1Id;
-                  const bowlTeam = teams.find(t => t.id === bowlTeamId);
+                  const bowlTeam = team1?.id === bowlTeamId ? team1 : team2;
                   
                   const totalExtras = (inn.extras?.wides||0) + (inn.extras?.noballs||0) + (inn.extras?.byes||0) + (inn.extras?.legbyes||0);
                   const yetToBat = battTeam?.players?.filter(p => !inn.batting.find(b => b.id === p.id)) || [];
@@ -1070,37 +1087,78 @@ export default function MatchDetailPage() {
 function TossModal({ open, onClose, match, team1, team2, onStart }) {
   const [tossWinner, setTossWinner] = useState('');
   const [tossChoice, setTossChoice] = useState('bat');
+  const [playingXI, setPlayingXI] = useState({});
   const [battingOrder, setBattingOrder] = useState([]);
   const [bowlingOrder, setBowlingOrder] = useState([]);
   const [step, setStep] = useState(1);
+  const [xiTab, setXiTab] = useState(team1?.id); // for playing XI selection tabs
+
+  useEffect(() => {
+    if (open && team1 && team2) {
+      setPlayingXI({
+        [team1.id]: team1.players.length <= 11 ? team1.players.map(p => p.id) : [],
+        [team2.id]: team2.players.length <= 11 ? team2.players.map(p => p.id) : [],
+      });
+      setBattingOrder([]);
+      setBowlingOrder([]);
+      setStep(1);
+      setXiTab(team1.id);
+    }
+  }, [open, team1, team2]);
 
   if (!open) return null;
 
-  const battingTeam = tossChoice === 'bat' ? (tossWinner === match.team1Id ? team1 : team2)
-    : (tossWinner === match.team1Id ? team2 : team1);
-  const bowlingTeam = battingTeam?.id === team1?.id ? team2 : team1;
-
-  const handleNext = () => {
+  const handleNextToPlayingXI = () => {
     if (!tossWinner) return alert('Select toss winner');
-    // Clear selections when going to step 2 so user explicitly chooses
-    setBattingOrder([]);
-    setBowlingOrder([]);
-    setStep(2);
+    // If both teams have <= 11 players, we can skip Step 2 and go to Step 3
+    if (team1?.players.length <= 11 && team2?.players.length <= 11) {
+      setStep(3);
+    } else {
+      setStep(2);
+    }
+  };
+
+  const handleTogglePlayer = (teamId, playerId) => {
+    setPlayingXI(prev => {
+      const teamXI = prev[teamId] || [];
+      if (teamXI.includes(playerId)) {
+        return { ...prev, [teamId]: teamXI.filter(id => id !== playerId) };
+      } else {
+        if (teamXI.length >= 11) {
+          alert('You can only select 11 players.');
+          return prev;
+        }
+        return { ...prev, [teamId]: [...teamXI, playerId] };
+      }
+    });
+  };
+
+  const handleNextToLineup = () => {
+    if (playingXI[team1.id].length < 2) return alert(`Please select at least 2 players for ${team1.name}`);
+    if (playingXI[team2.id].length < 2) return alert(`Please select at least 2 players for ${team2.name}`);
+    setStep(3);
   };
 
   const handleStart = () => {
     if (battingOrder.length < 2) return alert('Please select at least 2 opening batsmen (Striker & Non-Striker)');
     if (bowlingOrder.length < 1) return alert('Please select 1 opening bowler');
-    onStart(tossWinner, tossChoice, { batting: battingOrder, bowling: bowlingOrder });
-    setStep(1);
+    onStart(tossWinner, tossChoice, { batting: battingOrder, bowling: bowlingOrder }, playingXI);
   };
 
+  const battingTeamFull = tossChoice === 'bat' ? (tossWinner === match.team1Id ? team1 : team2) : (tossWinner === match.team1Id ? team2 : team1);
+  const bowlingTeamFull = battingTeamFull?.id === team1?.id ? team2 : team1;
+  
+  const battingTeamActive = { ...battingTeamFull, players: battingTeamFull?.players?.filter(p => playingXI[battingTeamFull.id]?.includes(p.id)) || [] };
+  const bowlingTeamActive = { ...bowlingTeamFull, players: bowlingTeamFull?.players?.filter(p => playingXI[bowlingTeamFull.id]?.includes(p.id)) || [] };
+
   return (
-    <Modal open={open} onClose={onClose} title={step === 1 ? "⚖️ Toss" : "📋 Opening Lineup"} size="lg"
+    <Modal open={open} onClose={onClose} title={step === 1 ? "⚖️ Toss" : step === 2 ? "👥 Playing XI" : "📋 Opening Lineup"} size="lg"
       footer={
         step === 1
-          ? <><button className="btn btn-secondary" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={handleNext}>Next →</button></>
-          : <><button className="btn btn-secondary" onClick={() => setStep(1)}>← Back</button><button className="btn btn-gold" onClick={handleStart}>🏏 Start Match</button></>
+          ? <><button className="btn btn-secondary" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={handleNextToPlayingXI}>Next →</button></>
+          : step === 2
+          ? <><button className="btn btn-secondary" onClick={() => setStep(1)}>← Back</button><button className="btn btn-primary" onClick={handleNextToLineup}>Next →</button></>
+          : <><button className="btn btn-secondary" onClick={() => setStep(2)}>← Back</button><button className="btn btn-gold" onClick={handleStart}>🏏 Start Match</button></>
       }
     >
       {step === 1 ? (
@@ -1156,20 +1214,69 @@ function TossModal({ open, onClose, match, team1, team2, onStart }) {
               {(tossWinner === team1?.id ? team1 : team2)?.name} won the toss and elected to {tossChoice} first.
               <br />
               <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>
-                {battingTeam?.name} will bat • {bowlingTeam?.name} will bowl
+                {battingTeamFull?.name} will bat • {bowlingTeamFull?.name} will bowl
               </span>
             </div>
           )}
         </>
+      ) : step === 2 ? (
+        <>
+          <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+            {[team1, team2].map(t => (
+              <button 
+                key={t.id} 
+                onClick={() => setXiTab(t.id)}
+                style={{ 
+                  flex: 1, padding: '12px', borderRadius: 8, 
+                  background: xiTab === t.id ? 'var(--bg-card-hover)' : 'transparent',
+                  border: `1px solid ${xiTab === t.id ? 'var(--gold-light)' : 'var(--border)'}`,
+                  color: xiTab === t.id ? 'var(--text-primary)' : 'var(--text-muted)',
+                  fontWeight: xiTab === t.id ? 700 : 500, cursor: 'pointer'
+                }}
+              >
+                {t.shortName || t.name} ({playingXI[t.id]?.length || 0}/11)
+              </button>
+            ))}
+          </div>
+          
+          <div className="form-group" style={{ flex: 1, overflowY: 'auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 300 }}>
+              {(xiTab === team1.id ? team1 : team2)?.players?.map(p => {
+                const isSelected = playingXI[xiTab]?.includes(p.id);
+                return (
+                  <div
+                    key={p.id}
+                    className="player-item"
+                    onClick={() => handleTogglePlayer(xiTab, p.id)}
+                    style={{
+                      background: isSelected ? 'rgba(245,158,11,0.08)' : 'transparent',
+                      border: `1px solid ${isSelected ? 'var(--gold-light)' : 'transparent'}`,
+                      borderRadius: 8, cursor: 'pointer'
+                    }}
+                  >
+                    <div className="player-avatar" style={{ background: isSelected ? 'rgba(245,158,11,0.2)' : 'var(--bg-card-hover)', color: isSelected ? 'var(--gold-light)' : 'var(--text-secondary)' }}>
+                      {(p.name || '?')[0].toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{p.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.role}</div>
+                    </div>
+                    {isSelected && <span style={{ color: 'var(--gold-light)', fontSize: 16 }}>✓</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
       ) : (
         <>
           <div className="form-group">
-            <label className="form-label">🏏 Select Opening Batsmen — {battingTeam?.name}</label>
+            <label className="form-label">🏏 Select Opening Batsmen — {battingTeamActive?.name}</label>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
               Click to select: 1st click = Striker, 2nd click = Non-Striker
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 200, overflowY: 'auto' }}>
-              {battingTeam?.players?.map(p => {
+              {battingTeamActive?.players?.map(p => {
                 const inOrder = battingOrder.find(b => b.id === p.id);
                 const pos = battingOrder.findIndex(b => b.id === p.id);
                 return (
@@ -1201,7 +1308,7 @@ function TossModal({ open, onClose, match, team1, team2, onStart }) {
                   </div>
                 );
               })}
-              {(!battingTeam?.players?.length) && (
+              {(!battingTeamActive?.players?.length) && (
                 <div style={{ padding: 12, color: 'var(--text-muted)', fontSize: 13 }}>
                   No players in this team. <Link href="/teams" style={{ color: 'var(--green-primary)' }}>Add players →</Link>
                 </div>
@@ -1209,9 +1316,9 @@ function TossModal({ open, onClose, match, team1, team2, onStart }) {
             </div>
           </div>
           <div className="form-group">
-            <label className="form-label">⚾ Select Opening Bowler — {bowlingTeam?.name}</label>
+            <label className="form-label">⚾ Select Opening Bowler — {bowlingTeamActive?.name}</label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 150, overflowY: 'auto' }}>
-              {bowlingTeam?.players?.filter(p => !p.isWK).map(p => {
+              {bowlingTeamActive?.players?.filter(p => p.role === 'Bowler' || p.role === 'All-rounder').map(p => {
                 const selected = bowlingOrder.find(b => b.id === p.id);
                 return (
                   <div
@@ -1238,7 +1345,7 @@ function TossModal({ open, onClose, match, team1, team2, onStart }) {
                   </div>
                 );
               })}
-              {(!bowlingTeam?.players?.length) && (
+              {(!bowlingTeamActive?.players?.length) && (
                 <div style={{ padding: 12, color: 'var(--text-muted)', fontSize: 13 }}>No players in bowling team.</div>
               )}
             </div>
@@ -1293,7 +1400,7 @@ function NewBatsmanModal({ open, onClose, onSelect, team, alreadyIn, title = "Se
   if (!open) return null;
   const available = (team?.players || []).filter(p => {
     if (alreadyIn.find(b => b.id === p.id && b.isOut)) return false;
-    if (isBowler && p.isWK) return false;
+    if (isBowler && p.role !== 'Bowler' && p.role !== 'All-rounder') return false;
     return true;
   });
 
@@ -1390,7 +1497,7 @@ function LineupModal({ open, onClose, battingTeam, bowlingTeam, onSave }) {
       <div className="form-group">
         <label className="form-label">⚾ Select Opening Bowler — {bowlingTeam?.name}</label>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 150, overflowY: 'auto' }}>
-          {bowlingTeam?.players?.filter(p => !p.isWK).map(p => {
+          {bowlingTeam?.players?.filter(p => p.role === 'Bowler' || p.role === 'All-rounder').map(p => {
             const selected = bowlingOrder.find(b => b.id === p.id);
             return (
               <div

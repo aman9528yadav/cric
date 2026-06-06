@@ -5,9 +5,152 @@ const CricketContext = createContext(null);
 
 const STORAGE_KEY = 'cricket_scorecard_data';
 
+const cskPlayers = [
+  { id: 'csk-1', name: 'Ruturaj Gaikwad', role: 'Batter', isCaptain: true, battingStyle: 'Right-hand' },
+  { id: 'csk-2', name: 'Sanju Samson', role: 'Wicketkeeper', isWK: true, battingStyle: 'Right-hand' },
+  { id: 'csk-3', name: 'Dewald Brevis', role: 'Batter', battingStyle: 'Right-hand' },
+  { id: 'csk-4', name: 'Shivam Dube', role: 'All-rounder', battingStyle: 'Left-hand', bowlingStyle: 'Right-arm medium' },
+  { id: 'csk-5', name: 'Prashant Veer', role: 'All-rounder', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm offbreak' },
+  { id: 'csk-6', name: 'MS Dhoni', role: 'Wicketkeeper', isWK: true, battingStyle: 'Right-hand' },
+  { id: 'csk-7', name: 'Kartik Sharma', role: 'All-rounder', battingStyle: 'Left-hand', bowlingStyle: 'Slow left-arm orthodox' },
+  { id: 'csk-8', name: 'Rahul Chahar', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Legbreak googly' },
+  { id: 'csk-9', name: 'Noor Ahmad', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Slow left-arm chinaman' },
+  { id: 'csk-10', name: 'Khaleel Ahmed', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Left-arm fast-medium' },
+  { id: 'csk-11', name: 'Ravindra Jadeja', role: 'All-rounder', battingStyle: 'Left-hand', bowlingStyle: 'Slow left-arm orthodox' },
+  { id: 'csk-12', name: 'Sarfaraz Khan', role: 'Batter', battingStyle: 'Right-hand' },
+  { id: 'csk-13', name: 'Urvil Patel', role: 'Wicketkeeper', isWK: true, battingStyle: 'Right-hand' },
+  { id: 'csk-14', name: 'Ayush Mhatre', role: 'Batter', battingStyle: 'Right-hand' },
+  { id: 'csk-15', name: 'Jamie Overton', role: 'All-rounder', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm fast' },
+  { id: 'csk-16', name: 'Akash Madhwal', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm fast-medium' },
+  { id: 'csk-17', name: 'Aman Khan', role: 'All-rounder', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm medium' },
+  { id: 'csk-18', name: 'Matthew Short', role: 'All-rounder', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm offbreak' },
+  { id: 'csk-19', name: 'Anshul Kamboj', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm medium-fast' },
+  { id: 'csk-20', name: 'Mukesh Choudhary', role: 'Bowler', battingStyle: 'Left-hand', bowlingStyle: 'Left-arm medium-fast' },
+  { id: 'csk-21', name: 'Nathan Ellis', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm fast-medium' },
+  { id: 'csk-22', name: 'Akeal Hosein', role: 'Bowler', battingStyle: 'Left-hand', bowlingStyle: 'Slow left-arm orthodox' },
+  { id: 'csk-23', name: 'Matt Henry', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm fast-medium' },
+  { id: 'csk-24', name: 'Spencer Johnson', role: 'Bowler', battingStyle: 'Left-hand', bowlingStyle: 'Left-arm fast' },
+  { id: 'csk-25', name: 'Shreyas Gopal', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Legbreak googly' }
+];
+
+const rcbPlayers = [
+  { id: 'rcb-1', name: 'Virat Kohli', role: 'Batter', battingStyle: 'Right-hand' },
+  { id: 'rcb-2', name: 'Devdutt Padikkal', role: 'Batter', battingStyle: 'Left-hand' },
+  { id: 'rcb-3', name: 'Rajat Patidar', role: 'Batter', isCaptain: true, battingStyle: 'Right-hand' },
+  { id: 'rcb-4', name: 'Phil Salt', role: 'Wicketkeeper', isWK: true, battingStyle: 'Right-hand' },
+  { id: 'rcb-5', name: 'Venkatesh Iyer', role: 'All-rounder', battingStyle: 'Left-hand', bowlingStyle: 'Right-arm medium' },
+  { id: 'rcb-6', name: 'Krunal Pandya', role: 'All-rounder', battingStyle: 'Left-hand', bowlingStyle: 'Slow left-arm orthodox' },
+  { id: 'rcb-7', name: 'Romario Shepherd', role: 'All-rounder', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm fast-medium' },
+  { id: 'rcb-8', name: 'Swapnil Singh', role: 'All-rounder', battingStyle: 'Right-hand', bowlingStyle: 'Slow left-arm orthodox' },
+  { id: 'rcb-9', name: 'Bhuvneshwar Kumar', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm medium-fast' },
+  { id: 'rcb-10', name: 'Josh Hazlewood', role: 'Bowler', battingStyle: 'Left-hand', bowlingStyle: 'Right-arm fast-medium' },
+  { id: 'rcb-11', name: 'Yash Dayal', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Left-arm fast-medium' },
+  { id: 'rcb-12', name: 'Jordan Cox', role: 'Batter', battingStyle: 'Right-hand' },
+  { id: 'rcb-13', name: 'Tim David', role: 'All-rounder', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm offbreak' },
+  { id: 'rcb-14', name: 'Jacob Bethell', role: 'All-rounder', battingStyle: 'Left-hand', bowlingStyle: 'Slow left-arm orthodox' },
+  { id: 'rcb-15', name: 'Suyash Sharma', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Legbreak googly' },
+  { id: 'rcb-16', name: 'Jacob Duffy', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Left-arm fast-medium' },
+  { id: 'rcb-17', name: 'Rasikh Salam', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm medium' },
+  { id: 'rcb-18', name: 'Nuwan Thushara', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm fast-medium' },
+  { id: 'rcb-19', name: 'Jitesh Sharma', role: 'Wicketkeeper', isWK: true, battingStyle: 'Right-hand' },
+  { id: 'rcb-20', name: 'Vicky Ostwal', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Slow left-arm orthodox' },
+  { id: 'rcb-21', name: 'Tim Seifert', role: 'Wicketkeeper', isWK: true, battingStyle: 'Right-hand' },
+  { id: 'rcb-22', name: 'Swastik Chhikara', role: 'Batter', battingStyle: 'Right-hand' },
+  { id: 'rcb-23', name: 'Mangesh Yadav', role: 'All-rounder', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm medium' }
+];
+
+const miPlayers = [
+  { id: 'mi-1', name: 'Hardik Pandya', role: 'All-rounder', isCaptain: true, battingStyle: 'Right-hand', bowlingStyle: 'Right-arm fast-medium' },
+  { id: 'mi-2', name: 'Rohit Sharma', role: 'Batter', battingStyle: 'Right-hand' },
+  { id: 'mi-3', name: 'Suryakumar Yadav', role: 'Batter', battingStyle: 'Right-hand' },
+  { id: 'mi-4', name: 'Jasprit Bumrah', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm fast' },
+  { id: 'mi-5', name: 'Tilak Varma', role: 'Batter', battingStyle: 'Left-hand' },
+  { id: 'mi-6', name: 'Quinton de Kock', role: 'Wicketkeeper', isWK: true, battingStyle: 'Left-hand' },
+  { id: 'mi-7', name: 'Trent Boult', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Left-arm fast-medium' },
+  { id: 'mi-8', name: 'Shardul Thakur', role: 'All-rounder', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm medium-fast' },
+  { id: 'mi-9', name: 'Mitchell Santner', role: 'All-rounder', battingStyle: 'Left-hand', bowlingStyle: 'Slow left-arm orthodox' },
+  { id: 'mi-10', name: 'Sherfane Rutherford', role: 'Batter', battingStyle: 'Left-hand' },
+  { id: 'mi-11', name: 'Mayank Markande', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Legbreak googly' },
+  { id: 'mi-12', name: 'Ryan Rickleton', role: 'Wicketkeeper', isWK: true, battingStyle: 'Left-hand' },
+  { id: 'mi-13', name: 'Corbin Bosch', role: 'All-rounder', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm fast-medium' },
+  { id: 'mi-14', name: 'Naman Dhir', role: 'All-rounder', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm offbreak' },
+  { id: 'mi-15', name: 'Robin Minz', role: 'Wicketkeeper', isWK: true, battingStyle: 'Left-hand' },
+  { id: 'mi-16', name: 'Raj Angad Bawa', role: 'All-rounder', battingStyle: 'Left-hand', bowlingStyle: 'Right-arm medium-fast' },
+  { id: 'mi-17', name: 'Raghu Sharma', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Legbreak googly' },
+  { id: 'mi-18', name: 'Allah Ghazanfar', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm offbreak' },
+  { id: 'mi-19', name: 'Ashwani Kumar', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm medium' },
+  { id: 'mi-20', name: 'Deepak Chahar', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm medium' },
+  { id: 'mi-21', name: 'Danish Malewar', role: 'Batter', battingStyle: 'Right-hand' },
+  { id: 'mi-22', name: 'Mohammad Izhar', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm fast-medium' },
+  { id: 'mi-23', name: 'Atharva Ankolekar', role: 'All-rounder', battingStyle: 'Right-hand', bowlingStyle: 'Slow left-arm orthodox' },
+  { id: 'mi-24', name: 'Mayank Rawat', role: 'All-rounder', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm offbreak' },
+  { id: 'mi-25', name: 'Will Jacks', role: 'All-rounder', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm offbreak' }
+];
+
+const srhPlayers = [
+  { id: 'srh-1', name: 'Pat Cummins', role: 'Bowler', isCaptain: true, battingStyle: 'Right-hand', bowlingStyle: 'Right-arm fast' },
+  { id: 'srh-2', name: 'Travis Head', role: 'Batter', battingStyle: 'Left-hand', bowlingStyle: 'Right-arm offbreak' },
+  { id: 'srh-3', name: 'Heinrich Klaasen', role: 'Wicketkeeper', isWK: true, battingStyle: 'Right-hand' },
+  { id: 'srh-4', name: 'Abhishek Sharma', role: 'All-rounder', battingStyle: 'Left-hand', bowlingStyle: 'Slow left-arm orthodox' },
+  { id: 'srh-5', name: 'Nitish Kumar Reddy', role: 'All-rounder', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm medium-fast' },
+  { id: 'srh-6', name: 'Ishan Kishan', role: 'Wicketkeeper', isWK: true, battingStyle: 'Left-hand' },
+  { id: 'srh-7', name: 'Liam Livingstone', role: 'All-rounder', battingStyle: 'Right-hand', bowlingStyle: 'Legbreak' },
+  { id: 'srh-8', name: 'Harshal Patel', role: 'All-rounder', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm medium' },
+  { id: 'srh-9', name: 'Jaydev Unadkat', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Left-arm medium-fast' },
+  { id: 'srh-10', name: 'Dilshan Madushanka', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Left-arm fast-medium' },
+  { id: 'srh-11', name: 'Gerald Coetzee', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm fast' },
+  { id: 'srh-12', name: 'Shivam Mavi', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm fast-medium' },
+  { id: 'srh-13', name: 'Brydon Carse', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm fast-medium' },
+  { id: 'srh-14', name: 'Kamindu Mendis', role: 'All-rounder', battingStyle: 'Left-hand', bowlingStyle: 'Slow left-arm orthodox' },
+  { id: 'srh-15', name: 'Eshan Malinga', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm fast-medium' },
+  { id: 'srh-16', name: 'Sakib Hussain', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm fast' },
+  { id: 'srh-17', name: 'Zeeshan Ansari', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Legbreak googly' },
+  { id: 'srh-18', name: 'Onkar Tarmale', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm medium' },
+  { id: 'srh-19', name: 'Amit Kumar', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm medium-fast' },
+  { id: 'srh-20', name: 'Praful Hinge', role: 'Bowler', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm medium-fast' },
+  { id: 'srh-21', name: 'Harsh Dubey', role: 'All-rounder', battingStyle: 'Left-hand', bowlingStyle: 'Slow left-arm orthodox' },
+  { id: 'srh-22', name: 'Shivang Kumar', role: 'All-rounder', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm medium' },
+  { id: 'srh-23', name: 'Krains Fuletra', role: 'All-rounder', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm offbreak' },
+  { id: 'srh-24', name: 'R.S. Ambrish', role: 'All-rounder', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm medium' },
+  { id: 'srh-25', name: 'Jack Edwards', role: 'All-rounder', battingStyle: 'Right-hand', bowlingStyle: 'Right-arm medium' }
+];
+
 const defaultData = {
   tournaments: [],
-  teams: [],
+  teams: [
+    {
+      id: 'team-csk',
+      createdAt: Date.now(),
+      name: 'Chennai Super Kings',
+      shortName: 'CSK',
+      color: '#facc15',
+      players: cskPlayers
+    },
+    {
+      id: 'team-rcb',
+      createdAt: Date.now(),
+      name: 'Royal Challengers Bengaluru',
+      shortName: 'RCB',
+      color: '#ef4444',
+      players: rcbPlayers
+    },
+    {
+      id: 'team-mi',
+      createdAt: Date.now(),
+      name: 'Mumbai Indians',
+      shortName: 'MI',
+      color: '#0ea5e9',
+      players: miPlayers
+    },
+    {
+      id: 'team-srh',
+      createdAt: Date.now(),
+      name: 'Sunrisers Hyderabad',
+      shortName: 'SRH',
+      color: '#f97316',
+      players: srhPlayers
+    }
+  ],
   matches: [],
   players: [],
 };
@@ -20,8 +163,14 @@ export function CricketProvider({ children }) {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       try {
-        setData(JSON.parse(raw));
+        const parsed = JSON.parse(raw);
+        if (!parsed.teams || parsed.teams.length === 0) {
+          parsed.teams = defaultData.teams;
+        }
+        setData(parsed);
       } catch {}
+    } else {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultData));
     }
     setLoaded(true);
   }, []);
@@ -52,6 +201,7 @@ export function CricketProvider({ children }) {
               tossWinner: null,
               tossChoice: null,
               currentInnings: 0,
+              playingXI: {},
               innings: [
                 createInnings(mf.team1Id),
                 createInnings(mf.team2Id),
@@ -77,6 +227,7 @@ export function CricketProvider({ children }) {
                 tossWinner: null,
                 tossChoice: null,
                 currentInnings: 0,
+                playingXI: {},
                 innings: [
                   createInnings(t.teams[i]),
                   createInnings(t.teams[j]),
@@ -171,6 +322,7 @@ export function CricketProvider({ children }) {
       tossWinner: null,
       tossChoice: null,
       currentInnings: 0,
+      playingXI: {},
       innings: [
         createInnings(m.team1Id),
         createInnings(m.team2Id),
@@ -442,7 +594,7 @@ export function CricketProvider({ children }) {
     });
   };
 
-  const startMatch = (matchId, { tossWinner, tossChoice, battingTeamId, bowlingTeamId, battingLineup, bowlingLineup }) => {
+  const startMatch = (matchId, { tossWinner, tossChoice, battingTeamId, bowlingTeamId, battingLineup, bowlingLineup, playingXI }) => {
     const match = data.matches.find(m => m.id === matchId);
     if (!match) return;
 
@@ -492,6 +644,7 @@ export function CricketProvider({ children }) {
         ...m,
         status: 'live',
         tossWinner, tossChoice,
+        playingXI,
         currentInnings: 0,
         innings,
       } : m),

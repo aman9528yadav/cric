@@ -8,7 +8,7 @@ const NAV_ITEMS = [
   { label: 'Tournaments', icon: '🏆', href: '/tournaments' },
   { label: 'Teams', icon: '👥', href: '/teams' },
   { label: 'Matches', icon: '🏏', href: '/matches' },
-  { label: 'Stats Hub', icon: '📈', href: '/stats' },
+
 ];
 
 export default function Sidebar() {
