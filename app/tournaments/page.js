@@ -236,12 +236,12 @@ function TournamentModal({ open, onClose, onSave, teams, title, initial }) {
     if (open) {
       setForm({
         name: '', format: 'T20', startDate: '', endDate: '',
-        description: '', teams: [], status: 'upcoming', totalOvers: 20,
+        description: '', teams: initial ? [] : teams.map(t => t.id), status: 'upcoming', totalOvers: 20,
         tier: 'normal', structure: 'round-robin', matchesPerTeam: 1, qualifyingCount: 4, pointsPerWin: 2, pointsPerTie: 1, fixtureMode: 'auto', manualFixtures: [],
         ...(initial || {}),
       });
     }
-  }, [open, initial]);
+  }, [open, initial, teams]);
 
   if (!open) return null;
 
