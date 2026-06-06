@@ -13,7 +13,7 @@ const DISMISSAL_TYPES = ['Bowled', 'Caught', 'LBW', 'Run Out', 'Stumped', 'Hit W
 export default function MatchDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { matches, teams, startMatch, recordBall, undoBall, updateMatch, setNewBatsman, setBowler, setInningsLineup } = useCricket();
+  const { matches, teams, startMatch, recordBall, undoBall, updateMatch, setNewBatsman, setBowler, setInningsLineup, applySubstitution } = useCricket();
   const { toast, show } = useToast();
   const [tab, setTab] = useState('score');
   const [showToss, setShowToss] = useState(false);
@@ -24,6 +24,7 @@ export default function MatchDetailPage() {
   const [showLineup, setShowLineup] = useState(false);
   const [scorecardInnings, setScorecardInnings] = useState(0);
   const [showRainDelay, setShowRainDelay] = useState(false);
+  const [showImpactModal, setShowImpactModal] = useState(false);
 
   const match = matches.find(m => m.id === id);
   if (!match) return (
@@ -140,8 +141,7 @@ export default function MatchDetailPage() {
     
     const newBalls = (innings?.balls || 0) + 1;
     const isOversCompleted = newBalls >= (match.totalOvers || 20) * 6;
-    const team = teams.find(t => t.id === innings?.teamId);
-    const maxWickets = Math.max(1, (team?.players?.length || 11) - 1);
+    const maxWickets = Math.max(1, (battingTeam?.players?.length || 11) - 1);
     const isAllOut = (innings?.wickets + 1) >= maxWickets;
 
     if (!isOversCompleted && !isAllOut) {
@@ -269,21 +269,21 @@ export default function MatchDetailPage() {
           </div>
         ) : (
           <div className="page-header">
-            <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-              <button className="mobile-back-btn" onClick={() => router.back()} title="Go Back">←</button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <div>
-                <div className="desktop-breadcrumb" style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 4 }}>
-                  <Link href="/matches" style={{ color: 'var(--green-primary)', textDecoration: 'none' }}>← Matches</Link>
+                <h1 className="title" style={{ margin: 0, fontSize: 24 }}>{team1?.name} vs {team2?.name}</h1>
+                <div style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 4 }}>
+                  {match.status === 'upcoming' ? 'Upcoming Match' : match.status === 'live' ? 'Live Match' : 'Match Completed'}
                 </div>
-                <h1 className="page-title" style={{ fontSize: 20 }}>
-                  {team1?.name} vs {team2?.name}
-                </h1>
-              <div className="page-subtitle">
-                {match.format} {match.totalOvers > 0 && `(${match.totalOvers} overs)`}
-                {match.venue && ` • ${match.venue}`}
-                {match.date && ` • ${match.date}`}
               </div>
-            </div>
+              <div style={{ display: 'flex', gap: 12 }}>
+                {match.status === 'live' && (
+                  <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setShowImpactModal(true)}>
+                    <span>🔁</span> Impact Player
+                  </button>
+                )}
+                <Link href="/matches" className="btn btn-secondary">← Back</Link>
+              </div>
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
               {match.status === 'upcoming' && (
@@ -863,6 +863,8 @@ export default function MatchDetailPage() {
                                   {b.name}
                                   {b.isStriker && <span style={{ color: 'var(--green-primary)', fontSize: 12 }}>←</span>}
                                   {b.isNonStriker && <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>*</span>}
+                                  {match.substitutions?.some(s => s.playerInId === b.id) && <span style={{ fontSize: 10, background: 'var(--gold-light)', color: '#000', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>IMPACT</span>}
+                                  {match.substitutions?.some(s => s.playerOutId === b.id) && <span style={{ fontSize: 10, background: 'var(--bg-card)', border: '1px solid var(--text-muted)', color: 'var(--text-muted)', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>OUT</span>}
                                 </div>
                                 <div style={{ fontSize: 13, color: b.isOut ? 'var(--text-muted)' : 'var(--green-primary)', marginTop: 4 }}>
                                   {getDismissalText(b)}
@@ -925,7 +927,11 @@ export default function MatchDetailPage() {
 
                         {inn.bowling.map(b => (
                           <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <div style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center' }}>{b.name}</div>
+                            <div style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: 6 }}>
+                              {b.name}
+                              {match.substitutions?.some(s => s.playerInId === b.id) && <span style={{ fontSize: 10, background: 'var(--gold-light)', color: '#000', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>IMPACT</span>}
+                              {match.substitutions?.some(s => s.playerOutId === b.id) && <span style={{ fontSize: 10, background: 'var(--bg-card)', border: '1px solid var(--text-muted)', color: 'var(--text-muted)', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>OUT</span>}
+                            </div>
                             <div style={{ display: 'flex', gap: 16, alignItems: 'center', width: 220, justifyContent: 'flex-end', fontFamily: 'Oswald', fontSize: 15 }}>
                               <span style={{ width: 30, textAlign: 'center', color: 'var(--text-secondary)' }}>{b.overs}</span>
                               <span style={{ width: 30, textAlign: 'center', color: 'var(--text-muted)' }}>{b.maidens || 0}</span>
@@ -1075,6 +1081,20 @@ export default function MatchDetailPage() {
               target: newTarget || match.target,
             });
             setShowRainDelay(false);
+          }}
+        />
+
+        {/* Impact Player Modal */}
+        <ImpactPlayerModal
+          open={showImpactModal}
+          onClose={() => setShowImpactModal(false)}
+          match={match}
+          team1Raw={team1Raw}
+          team2Raw={team2Raw}
+          onConfirm={(teamId, pOut, pIn) => {
+            applySubstitution(id, teamId, pOut, pIn);
+            setShowImpactModal(false);
+            show('Impact Player substituted successfully!', 'success');
           }}
         />
 
@@ -1399,7 +1419,7 @@ function WicketModal({ open, onClose, onConfirm, fielders }) {
 function NewBatsmanModal({ open, onClose, onSelect, team, alreadyIn, title = "Select New Batsman", isBowler = false }) {
   if (!open) return null;
   const available = (team?.players || []).filter(p => {
-    if (alreadyIn.find(b => b.id === p.id && b.isOut)) return false;
+    if (alreadyIn.find(b => b.id === p.id)) return false;
     if (isBowler && p.role !== 'Bowler' && p.role !== 'All-rounder') return false;
     return true;
   });
@@ -1593,6 +1613,85 @@ function RainDelayModal({ open, onClose, match, inningsIdx, onSave }) {
             Since the 1st innings is still ongoing, the target will be calculated automatically at the end of the innings based on the new total of {newOvers} overs.
           </div>
         </div>
+      )}
+    </Modal>
+  );
+}
+
+function ImpactPlayerModal({ open, onClose, match, team1Raw, team2Raw, onConfirm }) {
+  const [selectedTeamId, setSelectedTeamId] = useState('');
+  const [playerOutId, setPlayerOutId] = useState('');
+  const [playerInId, setPlayerInId] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      setSelectedTeamId('');
+      setPlayerOutId('');
+      setPlayerInId('');
+    }
+  }, [open]);
+
+  if (!open) return null;
+
+  const usedSubs = match.substitutions || [];
+  const team1Used = usedSubs.some(s => s.teamId === team1Raw?.id);
+  const team2Used = usedSubs.some(s => s.teamId === team2Raw?.id);
+
+  const availableTeams = [
+    ...(!team1Used && team1Raw ? [team1Raw] : []),
+    ...(!team2Used && team2Raw ? [team2Raw] : [])
+  ];
+
+  const selectedTeam = availableTeams.find(t => t.id === selectedTeamId);
+  const currentXI = selectedTeam ? match.playingXI?.[selectedTeam.id] || [] : [];
+  
+  const playersOut = selectedTeam?.players?.filter(p => currentXI.includes(p.id)) || [];
+  const playersIn = selectedTeam?.players?.filter(p => !currentXI.includes(p.id)) || [];
+
+  const handleConfirm = () => {
+    if (!selectedTeamId || !playerOutId || !playerInId) return alert('Please select all fields');
+    onConfirm(selectedTeamId, playerOutId, playerInId);
+  };
+  
+  return (
+    <Modal open={open} onClose={onClose} title="🔁 Impact Player Substitution" size="sm" footer={
+      <>
+        <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+        <button className="btn btn-primary" onClick={handleConfirm} disabled={!playerInId || !playerOutId}>Apply Swap</button>
+      </>
+    }>
+      {availableTeams.length === 0 ? (
+        <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>
+          Both teams have already used their Impact Player substitution.
+        </div>
+      ) : (
+        <>
+          <div className="form-group">
+            <label className="form-label">Select Team</label>
+            <select className="form-select" value={selectedTeamId} onChange={e => { setSelectedTeamId(e.target.value); setPlayerOutId(''); setPlayerInId(''); }}>
+              <option value="">-- Choose Team --</option>
+              {availableTeams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
+          {selectedTeam && (
+            <>
+              <div className="form-group">
+                <label className="form-label">Player OUT (Currently in XI)</label>
+                <select className="form-select" value={playerOutId} onChange={e => setPlayerOutId(e.target.value)}>
+                  <option value="">-- Select Player to come off --</option>
+                  {playersOut.map(p => <option key={p.id} value={p.id}>{p.name} ({p.role})</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Player IN (From Bench)</label>
+                <select className="form-select" value={playerInId} onChange={e => setPlayerInId(e.target.value)}>
+                  <option value="">-- Select Impact Player --</option>
+                  {playersIn.map(p => <option key={p.id} value={p.id}>{p.name} ({p.role})</option>)}
+                </select>
+              </div>
+            </>
+          )}
+        </>
       )}
     </Modal>
   );

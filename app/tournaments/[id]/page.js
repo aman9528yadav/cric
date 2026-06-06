@@ -417,6 +417,9 @@ function MatchRow({ match, teams }) {
 function calcNRR(teamId, matches) {
   let runsScored = 0, oversScored = 0, runsConceded = 0, oversConceded = 0;
   matches.forEach(m => {
+    // If match is a tie, user requested it to contribute 0 to NRR, so we skip it
+    if (!m.result?.winner) return; 
+    
     const isBatFirst = m.innings[0]?.teamId === teamId;
     const myInnings = isBatFirst ? m.innings[0] : m.innings[1];
     const oppInnings = isBatFirst ? m.innings[1] : m.innings[0];
@@ -426,3 +429,4 @@ function calcNRR(teamId, matches) {
   if (oversScored === 0 || oversConceded === 0) return 0;
   return (runsScored / oversScored) - (runsConceded / oversConceded);
 }
+

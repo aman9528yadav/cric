@@ -202,6 +202,7 @@ export function CricketProvider({ children }) {
               tossChoice: null,
               currentInnings: 0,
               playingXI: {},
+              substitutions: [],
               innings: [
                 createInnings(mf.team1Id),
                 createInnings(mf.team2Id),
@@ -228,6 +229,7 @@ export function CricketProvider({ children }) {
                 tossChoice: null,
                 currentInnings: 0,
                 playingXI: {},
+                substitutions: [],
                 innings: [
                   createInnings(t.teams[i]),
                   createInnings(t.teams[j]),
@@ -323,6 +325,7 @@ export function CricketProvider({ children }) {
       tossChoice: null,
       currentInnings: 0,
       playingXI: {},
+      substitutions: [],
       innings: [
         createInnings(m.team1Id),
         createInnings(m.team2Id),
@@ -542,8 +545,10 @@ export function CricketProvider({ children }) {
     newInnings[inningsIdx] = innings;
 
     // Check end of innings conditions
-    const team = data.teams.find(t => t.id === innings.teamId);
-    const maxWickets = Math.max(1, (team?.players?.length || 11) - 1);
+    const teamId = innings.teamId;
+    const playingXICount = match.playingXI?.[teamId]?.length;
+    const teamSize = playingXICount > 0 ? playingXICount : (data.teams.find(t => t.id === teamId)?.players?.length || 11);
+    const maxWickets = Math.max(1, teamSize - 1);
     
     const totalOvers = match.totalOvers || 20;
     const oversCompleted = innings.balls >= totalOvers * 6;
@@ -645,6 +650,7 @@ export function CricketProvider({ children }) {
         status: 'live',
         tossWinner, tossChoice,
         playingXI,
+        substitutions: m.substitutions || [],
         currentInnings: 0,
         innings,
       } : m),
@@ -748,13 +754,37 @@ export function CricketProvider({ children }) {
     });
   };
 
+  const applySubstitution = (matchId, teamId, playerOutId, playerInId) => {
+    const match = data.matches.find(m => m.id === matchId);
+    if (!match) return;
+
+    const teamPlayingXI = match.playingXI?.[teamId] || [];
+    const newPlayingXI = teamPlayingXI.map(id => id === playerOutId ? playerInId : id);
+
+    const subRecord = {
+      teamId,
+      playerOutId,
+      playerInId,
+      over: `${Math.floor(match.innings[match.currentInnings]?.balls / 6) || 0}.${(match.innings[match.currentInnings]?.balls % 6) || 0}`
+    };
+
+    save({
+      ...data,
+      matches: data.matches.map(m => m.id === matchId ? {
+        ...m,
+        playingXI: { ...m.playingXI, [teamId]: newPlayingXI },
+        substitutions: [...(m.substitutions || []), subRecord]
+      } : m),
+    });
+  };
+
   const value = {
     ...data,
     loaded,
     addTournament, updateTournament, deleteTournament, getTournament,
     addTeam, updateTeam, deleteTeam, addPlayerToTeam, removePlayerFromTeam, updatePlayerInTeam, getTeam,
     addMatch, updateMatch, deleteMatch, getMatch,
-    recordBall, undoBall, startMatch, setInningsLineup, setBowler, setNewBatsman,
+    recordBall, undoBall, startMatch, setInningsLineup, setBowler, setNewBatsman, applySubstitution,
   };
 
   return <CricketContext.Provider value={value}>{children}</CricketContext.Provider>;
